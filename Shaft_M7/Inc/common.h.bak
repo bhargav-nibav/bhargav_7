@@ -1,0 +1,126 @@
+/*
+ * common.h
+ *
+ *  Created on: Oct 19, 2023
+ *      Author: ADMIN
+ */
+
+#ifndef INC_COMMON_H_
+#define INC_COMMON_H_
+
+#include "stdlib.h"
+#include "stdint.h"
+#include "string.h"
+#include "tim.h"
+
+#include <stdbool.h>
+#include <stdio.h>
+#define SET_BIT_n(reg, n) (reg |= (1 << n))
+#define CLR_BIT(reg, n) (reg &= ~(1 << n))
+#define CHECK_BIT(reg, n) (reg & (1 << n))
+#define LENGTH_ARRAY(x) (sizeof(x)/sizeof(x[0]))
+
+uint32_t tickDiff(uint32_t startTime, uint32_t currentTime);
+
+//#define SERVO_ENABLE   // if EVO is servo based, please enable this macro
+
+#define SEC_TO_MILLISEC(x)       (x*ONE_SECOND)
+#define ONE_SECOND 1000UL
+#define TWO_SECOND 2000UL
+
+#define MID                       0x2
+#define MECH_LOCK_OPEN            1
+#define MECH_LOCK_CLOSED          0
+#define MECH_LOCK_SEMI            MID
+
+typedef uint8_t FLOOR_NUM;
+
+#define MAX_FLOOR 4
+#define MAX_FLOOR_CONST    8
+
+#define BACKUP_DISTNACE		huart4
+#define DEBUG_UART			huart3
+#define WIFI_UART 			huart6
+#define LIDAR_UART			huart7
+
+#define MAJOR_VERSION       1
+#define MINOR_VERSION       1
+
+/*********** Timer Port  *********/
+#define SERVO_TIMER       		htim2
+#define ZEROCROSS_TIMER   		htim1
+
+#define MOTOR_STOP              9800
+#define EVO_SERVO_CLOSE         125
+#define EVO_SERVO_OPEN          80
+#define SPEED_INTERVAL 		    100
+
+typedef enum {
+	ESP_CMD_REQ_STATUS_COMPLETE,
+	ESP_CMD_REQ_STATUS_BUSY,
+	ESP_CMD_REQ_STATUS_ERROR
+} REQ_STATUS;
+
+typedef enum {
+	DEVICE_START_TIMER,
+	DEVICE_WAIT_UNTIL_COUNTDOWN,
+	DEVICE_SET_TIMEOUT,
+	DEVICE_IDLE
+} TIMEOUT_CALCULATION;
+
+#define TIMEOUT_LIDAR	500
+#define TIMEOUT_LOP		2000
+#define TIMEOUT_WIFI_DEVICES	5000
+
+#define TIMER_OFF_VALUE 0xFF
+#define CALL_REGISTERED   0x01
+#define CALL_FROM_HAL     0x02
+#define CALL_CABIN        0x03
+#define CALL_PRIORITY     0x04
+#define DOOR_LOCK_VAL(x) (!x)
+#define PB_LED_OFF_TIME           2  //1 second
+
+#define FLOOR_RANGE_OFFSET_VAL    80
+#define EMG_FLOOR_RANGE_OFFSET_VAL    170
+
+#define TOP_FLOOR (MAX_FLOOR -1)
+
+#define UPCALL_BOTTOM_POINT_OFFSET  200
+#define UPCALL_TOP_POINT_OFFSET     50
+#define UPCALL_TOP_POINT_OFFSET_MODIFIED     130
+#define UPCALL_OFFSET_VALUE          80
+#define UPCALL_DEST_OFFSET_CTRL      400
+#define SOFT_ZONE_OFFESET            300
+
+#define TOP_FLOOR_STOP_OFFSET        80
+
+#define UPCALL_LIFT_MOVED_OFFSET     120
+#define CHECK_FLOOR_RANGE(absVal,offset,measured) (((absVal - offset) < measured) && ((absVal + offset) > measured))
+
+#define POWER_DEVICE 		0
+#define	OVERLOAD_DEVICE		1
+#define	EMERGENCY_DEVICE	2
+#define CALIBRATION_DEVICE	3
+#define LIDAR_DEVICE		4
+#define CHILD_LOCK_DEVICE	5
+#define CABIN_EMERGENCY		6
+/**
+ *
+ */
+#define DOWNCALL_BOTTOM_POINT_OFFSET   		80
+
+#define DOWNCALL_MOTORCTRL_DIS_OFFSET      500
+
+#define LIFT_UP_FLOOR_OFFSET      		   100
+#define LIFT_UP_DOWNCALL_OFFSET   		   80
+#define DOWNCALL_SOFTLAND_DIS_OFFSET       250//20
+
+#define LIDAR_INCOMING_SIZE 				9
+
+#define SPEED_CONTROL_UPPER_LIMIT   	  1000
+#define SPEED_CONTROL_LOWER_LIMIT   	  9001
+
+//#define STOP_MOTOR                 5000
+//#define START_MOTOR                5000
+
+#endif /* INC_COMMON_H_ */

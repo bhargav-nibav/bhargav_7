@@ -1,0 +1,64 @@
+/*
+ * serial_handler.h
+ *
+ *  Created on: Oct 26, 2023
+ *      Author: ADMIN
+ */
+
+#ifndef INC_SERIAL_HANDLER_H_
+#define INC_SERIAL_HANDLER_H_
+
+#include "common.h"
+
+#define MAX_BUFFER_SIZE 50
+//#define MAX_ALLOWED
+
+#define MINIMUM_ALLOWED_BATTERY 20
+void updateWiFiValue();
+
+void setCabinFloorNumber(uint8_t flr_num);
+void setLOPCallBookedMessage(uint8_t flr_num);
+void setErrorMessage(uint8_t error_message);
+void setcalibrationStatus(uint8_t status);
+void setLLState(int ll_status);
+void setLinearActuator(int ll_status);
+void setEVstatus(uint8_t state);
+void setMotorNum(uint8_t num);
+void set_power_value(bool state);
+void setCabinCallBooked(uint8_t flr_num);
+void cabin_set_booking_message(uint8_t regValue);
+void door_lock(uint8_t flr_num);
+void send_broadcast_message();
+void set_door_state(uint8_t door_msg);
+void set_mech_state(uint8_t mech_msg);
+void setcabinvalueupdated();
+void lockDoorSolenoidAtFloor(FLOOR_NUM floorNum,bool state);
+
+bool cabin_emergency_input();
+bool siren_input();
+bool child_lock_input();
+bool downtime_status();
+bool getAndroidState();
+uint8_t getbatteryValue();
+bool getContactChargerValue();
+
+void set_lop_state(uint8_t * flr_num);
+bool readDoorSwitchStatus(uint8_t floorNum);
+int readMechanicalLock(uint8_t flr);
+
+bool doorClosed();
+bool setDoorLockState(FLOOR_NUM flr, bool state);
+uint8_t doorGetIOstate();
+
+bool lop_disconnected();
+void monitor_lop_timer();
+void set_device_availability(int device_type, bool state);
+void set_network_availability(int device_type, bool state);
+bool cabin_battery_acceptable();
+
+/*
+ * RPi data
+ * */
+bool light_curtain_triggered();
+int people_count();
+#endif /* INC_SERIAL_HANDLER_H_ */

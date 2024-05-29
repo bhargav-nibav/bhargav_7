@@ -1,0 +1,453 @@
+/*
+ * configuration.cpp
+ *
+ *  Created on: Dec 13, 2023
+ *      Author: ADMIN
+ */
+
+
+//#include "SPIFFS.h"
+
+#include <string.h>
+//#include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include "main.h"
+#include "common.h"
+#include "configuration.h"
+#include "common.h"
+
+#define CRC_INIT_VAL                   0x0000
+#define FLASH_START_ADDR               0x0810F000  // 0x0800C000
+#define FLASH_TYPEPROGRAM_WORD        ((uint32_t)0x02U)
+#define WORDS_TO_READ                  5
+#define FLASHWORD					   8
+
+CONFIG_FILE config_file;
+const char *configFileName = "/config.bin";
+//uint32_t autoCalData[MAX_FLOOR_CONST+1];
+uint32_t autoCalData[5];
+
+bool readConfigFile();
+static void configurationInitHardCode();
+static uint32_t GetSector(uint32_t Address);
+/**************************************************************************************/
+
+bool configFileInit()
+{
+	// uint16_t crc;
+    if(readConfigFile())
+    {
+     // crc = crc16(CRC_INIT_VAL, (uint32_t *)&config_file, sizeof(config_file) - sizeof(config_file.crc));
+//      if (crc == config_file.crc)
+//      {
+//    	//  debug_print_n("Flash CRC passed \r\n");
+//        return true;
+//      }
+//      else
+//      {
+        configurationInitHardCode();
+      //  debug_print_n("Flash CRC failed \r\n");
+        return true;
+     // }
+    }
+    else
+    {
+    //	debug_print_n("Flash read failed update new file\r\n");
+      configurationInitHardCode();
+      return true;
+    }
+
+  return false;
+}
+
+bool writeConfigFile()
+{
+ // uint32_t writeData[MAX_FLOOR_CONST+1];
+  uint32_t writeData[5];
+  uint32_t i=0;
+  writeData[0] = config_file.numberOfFloors;
+//  memcpy(config_file.LIDAR, autoCalData[1],MAX_FLOOR_CONST );
+ // for(i=0;i<(MAX_FLOOR_CONST+1);i++)
+  for(i=0;i<5;i++)
+  {
+	  writeData[++i] = config_file.LIDAR[i];
+  }
+  Flash_Write_Data (FLASH_START_ADDR,(uint32_t *)writeData, sizeof(writeData));
+  //writeToFlash(FLASH_START_ADDR, (uint32_t *)writeData, sizeof(writeData));
+
+  return true;
+}
+
+void Flash_Read_Data (uint32_t StartSectorAddress, uint32_t *RxBuf, uint16_t numberofwords)
+{
+	while (1)
+	{
+		*RxBuf = *(__IO uint32_t *)StartSectorAddress;
+		StartSectorAddress += 4;
+		RxBuf++;
+		if (!(numberofwords--)) break;
+	}
+}
+
+bool readConfigFile()
+{
+	Flash_Read_Data( FLASH_START_ADDR, &autoCalData,WORDS_TO_READ );
+	config_file.numberOfFloors = autoCalData[0];
+	memcpy(config_file.LIDAR, autoCalData[1],MAX_FLOOR_CONST );
+	//memcpy(configFile->LIDAR, lidarPos, sizeof(lidarPos));
+//	for(int i=0;i<(sizeof(autoCalData));i++)
+//	{
+//		config_file.LIDAR[i] = autoCalData[++i];
+//	}
+//	config_file.LIDAR[0] = autoCalData[1];
+//	config_file.LIDAR[1] = autoCalData[2];
+//	config_file.LIDAR[3] = autoCalData[2];
+  return true;
+}
+
+CONFIG_FILE *getConfig()
+{
+  return &config_file;
+}
+
+static void configurationInitHardCode()
+{
+  CONFIG_FILE *configFile = getConfig();
+  // customer02
+  //   uint8_t cabinMacId[] = {0xF4, 0x12, 0xFA, 0xEC, 0xB7, 0x0C};//
+  //   uint16_t lidarPos[] = {640,336,26};
+
+  // customer01
+  //uint8_t cabinMacId[] = {0x34, 0x85, 0x18, 0x99, 0xb3, 0x9c}; // {0xF4, 0x12, 0xFA, 0xEC, 0xB0, 0x38};// MAC  G3 : f4:12:fa:ec:b0:38
+  uint16_t lidarPos[] = {955, 646, 336, 16};                   // third 19
+//  uint16_t lidarPos[] = {0, 0, 0, 0};                                                       // customer01 new  34:85:18:99:b3:9c 70:04:1d:a9:1c:28
+
+
+ // configFile->doorOpenTimeSec = 30;
+ // configFile->doorCloseTimeSec = 20;
+ // configFile->doorOpenTimeDuringCall = 3;
+ // esp_read_mac(configFile->macIdShaft, ESP_MAC_WIFI_STA);
+ // memcpy(configFile->macIdCabin, cabinMacId, sizeof(cabinMacId));
+  configFile->numberOfFloors = LENGTH_ARRAY(lidarPos);
+  memcpy(configFile->LIDAR, lidarPos, sizeof(lidarPos));
+
+  writeConfigFile();
+}
+
+//bool writeToFlash(uint32_t address, uint32_t *dataBuffer, uint32_t dataSize) {
+//
+//	 uint32_t pageError = 0;
+//     HAL_FLASH_Unlock();
+//     FLASH_Erase_Sector(FLASH_SECTOR_2,FLASH_BANK_1, FLASH_VOLTAGE_RANGE_3);
+//    // Write the data to Flash
+//
+//	if (HAL_FLASH_Program(0x02, address, (uint32_t)dataBuffer) == HAL_OK)
+//	{
+//		address = address + 8; /* increment for the next Flash word*/
+//		return true;
+//	}
+//	else
+//	{
+//	  /* Error occurred while writing data in Flash memory.
+//		 User can add here some code to deal with this error */
+//		return false;
+////	  char *str = "failed";
+////	  HAL_UART_Transmit(&huart3,str,sizeof(str),10);
+//	}
+////}
+//
+//    // Lock the flash interface after reading
+//    HAL_FLASH_Lock();
+//}
+
+
+/* The DATA to be written here MUST be according to the List Shown Below
+
+For EXAMPLE:- For H74x/5x, a single data must be 8 numbers of 32 bits word
+If you try to write a single 32 bit word, it will automatically write 0's for the rest 7
+
+*          - 256 bits for STM32H74x/5X devices (8x 32bits words)
+*          - 128 bits for STM32H7Ax/BX devices (4x 32bits words)
+*          - 256 bits for STM32H72x/3X devices (8x 32bits words)
+*
+*/
+
+uint32_t Flash_Write_Data (uint32_t StartSectorAddress, uint32_t *data, uint16_t numberofwords)
+{
+
+	static FLASH_EraseInitTypeDef EraseInitStruct;
+	uint32_t SECTORError;
+	int sofar=0;
+
+	 /* Unlock the Flash to enable the flash control register access *************/
+	  HAL_FLASH_Unlock();
+
+	  /* Erase the user Flash area */
+
+	  /* Get the number of sector to erase from 1st sector */
+
+	  uint32_t StartSector = GetSector(StartSectorAddress);
+	  uint32_t EndSectorAddress = StartSectorAddress + numberofwords*4;
+	  uint32_t EndSector = GetSector(EndSectorAddress);
+
+	  /* Fill EraseInit structure*/
+	  EraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
+	  EraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
+	  EraseInitStruct.Sector        = StartSector;
+
+	  // The the proper BANK to erase the Sector
+	  if (StartSectorAddress < 0x08100000)
+		  EraseInitStruct.Banks     = FLASH_BANK_1;
+	  else EraseInitStruct.Banks    = FLASH_BANK_2;
+
+	  EraseInitStruct.NbSectors     = (EndSector - StartSector) + 1;
+
+
+	  if (HAL_FLASHEx_Erase(&EraseInitStruct, &SECTORError) != HAL_OK)
+	  {
+		  return HAL_FLASH_GetError ();
+	  }
+
+	  /* Program the user Flash area 8 WORDS at a time
+	   * (area defined by FLASH_USER_START_ADDR and FLASH_USER_END_ADDR) ***********/
+
+	   while (sofar<numberofwords)
+	   {
+	     if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, StartSectorAddress, (uint32_t ) &data[sofar]) == HAL_OK)
+	     {
+	    	 StartSectorAddress += 4*FLASHWORD;  //
+	    	 sofar+=FLASHWORD;
+	     }
+	     else
+	     {
+	       /* Error occurred while writing data in Flash memory*/
+	    	 return HAL_FLASH_GetError ();
+	     }
+	   }
+
+	  /* Lock the Flash to disable the flash control register access (recommended
+	     to protect the FLASH memory against possible unwanted operation) *********/
+	  HAL_FLASH_Lock();
+
+	   return 0;
+}
+
+
+
+// There are 2 BANKS available for H745, BANK 1 (0x0800 0000 - 0x080F FFFF) and BANK 2 (0x0810 0000 - 0x080F FFFF)
+// Both of them have Sectors 0 to 7.
+// We will define the sectors in normal way (like Defined below), and later the BANK will be taken care by the HAL
+
+static uint32_t GetSector(uint32_t Address)
+{
+  uint32_t sector = 0;
+
+  /* BANK 1 */
+  if((Address >= 0x08000000) && (Address < 0x08020000))
+  {
+    sector = FLASH_SECTOR_0;
+  }
+
+  else if((Address >= 0x08020000) && (Address < 0x08040000))
+  {
+    sector = FLASH_SECTOR_1;
+  }
+
+  else if((Address >= 0x08040000) && (Address < 0x08060000))
+  {
+    sector = FLASH_SECTOR_2;
+  }
+
+  else if((Address >= 0x08060000) && (Address < 0x08080000))
+  {
+    sector = FLASH_SECTOR_3;
+  }
+
+  else if((Address >= 0x08080000) && (Address < 0x080A0000))
+  {
+    sector = FLASH_SECTOR_4;
+  }
+
+  else if((Address >= 0x080A0000) && (Address < 0x080C0000))
+  {
+    sector = FLASH_SECTOR_5;
+  }
+
+  else if((Address >= 0x080C0000) && (Address < 0x080E0000))
+  {
+    sector = FLASH_SECTOR_6;
+  }
+
+  else if((Address >= 0x080E0000) && (Address < 0x08100000))
+  {
+    sector = FLASH_SECTOR_7;
+  }
+
+
+  /* BANK 2 */
+  if((Address >= 0x08100000) && (Address < 0x08120000))
+  {
+    sector = FLASH_SECTOR_0;
+  }
+
+  else if((Address >= 0x08120000) && (Address < 0x08140000))
+  {
+    sector = FLASH_SECTOR_1;
+  }
+
+  else if((Address >= 0x08140000) && (Address < 0x08160000))
+  {
+    sector = FLASH_SECTOR_2;
+  }
+
+  else if((Address >= 0x08160000) && (Address < 0x08180000))
+  {
+    sector = FLASH_SECTOR_3;
+  }
+
+  else if((Address >= 0x08180000) && (Address < 0x081A0000))
+  {
+    sector = FLASH_SECTOR_4;
+  }
+
+  else if((Address >= 0x081A0000) && (Address < 0x081C0000))
+  {
+    sector = FLASH_SECTOR_5;
+  }
+
+  else if((Address >= 0x081C0000) && (Address < 0x081E0000))
+  {
+    sector = FLASH_SECTOR_6;
+  }
+
+  else if((Address >= 0x081E0000) && (Address < 0x08200000))
+  {
+    sector = FLASH_SECTOR_7;
+  }
+
+  return sector;
+}
+
+
+bool writeParameter(PARAMETER_NAME_t param, const uint8_t *value, uint8_t len)
+{
+  switch (param)
+  {
+  case NO_OF_FLOORS:
+    if (len == sizeof(config_file.numberOfFloors))
+    {
+     // debug_print_n("Number of floor numbers = " + String(*value));
+      config_file.numberOfFloors = *value;
+    }
+//    break;
+//  case DOOR_OPEN_TIME:
+//    if (len == sizeof(config_file.doorOpenTimeSec))
+//    {
+//      debug_print_n("Number of Door open duration = " + String(*value));
+//      config_file.doorOpenTimeSec = *value;
+//    }
+//    break;
+//  case DOOR_CLOSE_TIME:
+//    if (len == sizeof(config_file.doorCloseTimeSec))
+//    {
+//      debug_print_n("Number of Door close = " + String(*value));
+//      config_file.doorCloseTimeSec = *value;
+//    }
+//    break;
+//  case DOOR_OPEN_CALL_TIME:
+//	debug_print_n("Number of Door open time during call = " + String(*value));
+//    if (len == sizeof(config_file.doorOpenTimeDuringCall))
+//    {
+//      config_file.doorOpenTimeDuringCall = *value;
+//    }
+//    break;
+//  case SHAFT_MAC_ID:
+//    if (len == sizeof(config_file.macIdShaft))
+//    {
+//      memcpy(config_file.macIdShaft, value, sizeof(config_file.macIdShaft));
+//    }
+//    break;
+//  case CABIN_MAC_ID:
+//    if (len == sizeof(config_file.macIdCabin))
+//    {
+//      memcpy(config_file.macIdCabin, value, sizeof(config_file.macIdCabin));
+//    }
+//    break;
+  case LIDAR_VALUE_AT_FLOOR:
+    if (len == sizeof(config_file.LIDAR))
+    {
+      memcpy(config_file.LIDAR, value, sizeof(config_file.LIDAR));
+    }
+    break;
+  default:
+    break;
+  }
+  return true;
+}
+
+uint8_t readParameter(PARAMETER_NAME_t param, uint8_t *value)
+{
+  uint8_t length;
+  switch (param)
+  {
+  case NO_OF_FLOORS:
+  {
+    memcpy(value, &config_file.numberOfFloors, sizeof(config_file.numberOfFloors));
+    length = sizeof(config_file.numberOfFloors);
+  }
+  break;
+//  case DOOR_OPEN_TIME:
+//  {
+//    length = sizeof(config_file.doorOpenTimeSec);
+//    memcpy(value, &config_file.doorOpenTimeSec, sizeof(config_file.doorOpenTimeSec));
+//  }
+//  break;
+//  case DOOR_CLOSE_TIME:
+//  {
+//    length = sizeof(config_file.doorCloseTimeSec);
+//    memcpy(value, &config_file.doorCloseTimeSec, sizeof(config_file.doorCloseTimeSec));
+//  }
+//  break;
+//  case DOOR_OPEN_CALL_TIME:
+//  {
+//    length = sizeof(config_file.doorOpenTimeDuringCall);
+//    memcpy(value, &config_file.doorOpenTimeDuringCall, sizeof(config_file.doorOpenTimeDuringCall));
+//  }
+//  break;
+//  case SHAFT_MAC_ID:
+//  {
+//    length = sizeof(config_file.macIdShaft);
+//    memcpy(value, &config_file.macIdShaft, sizeof(config_file.macIdShaft));
+//  }
+//  break;
+//  case CABIN_MAC_ID:
+//  {
+//    length = sizeof(config_file.macIdCabin);
+//    memcpy(value, &config_file.macIdCabin, sizeof(config_file.macIdCabin));
+//  }
+//  break;
+  case LIDAR_VALUE_AT_FLOOR:
+  {
+    length = sizeof(config_file.LIDAR);
+    memcpy(value, &config_file.LIDAR, sizeof(config_file.LIDAR));
+  }
+  break;
+  default:
+    length = 0;
+    break;
+  }
+  return length;
+}
+
+void printLidarValue()
+{
+  // print cabinMacId in for loop
+  //  for (int i = 0; i < LENGTH_ARRAY(cabinMacId); i++)
+  //  {
+  //    Serial.printf("%02X ", cabinMacId[i]);
+  //  }
+}
+
+
+
